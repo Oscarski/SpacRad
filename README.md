@@ -1,3 +1,3 @@
 # SpaceRad
 
-okej chyba mniej więcej ogarnąłem, mam nadzieję, że wszytsko działa
+https://github.com/jpalau-edu/AstroPi1920/blob/master/SpaceWombats/mainSpaceWombats.py
