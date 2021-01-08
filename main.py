@@ -1,136 +1,45 @@
+#biblioteki
+#from sense_hat import SenseHat
+#from picamera import PiCamera
+from time import sleep
+import logging
+import ephem
+import csv
+import random
 from logzero import logger, logfile
 from PIL import Image
+from datetime import datetime
+from datetime import timedelta
 import os
 
+
+#zmienne globalne
 minimum_brightness = 0.35 #minimalna jasnosc
-photo_amount = 11 #ilosc zdjec
-
-# czyta i zapisuje sciezke tam gdzie jest main.py
-dir_path = os.path.dirname(os.path.realpath(__file__))
-
-# tworzy logfile
-logfile(dir_path + "/spacerad.csv")
-
-
-def calculate_brightness(image):
-    greyscale = image.convert('L')
-    histogram = greyscale.histogram()
-    pixels = sum(histogram)
-    brightness = scale = len(histogram)
-
-    for index in range(0, scale):
-        ratio = histogram[index] / pixels
-        brightness += ratio * (index - scale)
-    if brightness == 255:
-        return 1
-    else:
-        return brightness / scale
-
-logger.info("\tMission started") #poczatek misji
-
-index = 1
-
-while index <= photo_amount:#w zaleznosci od ilosci zdjec
-    try:
-        nazwa = str(index).zfill(4)
-        image = Image.open("spacerad_{}.jpg".format(nazwa))
-        jasnosc = calculate_brightness(image)
-        info_log = "\tspacerad_{}, ".format(nazwa) + "jasnosc: " + str(jasnosc)
-        logger.info(info_log)
-        if jasnosc < minimum_brightness:
-            os.remove("spacerad_{}.jpg".format(nazwa))
-            logger.info("\tUsunieto zdjecie spacerad_{}".format(nazwa))
-
-    except Exception as e:
-            logger.error("\t{}: {})".format(e.__class__.__name__, e))
-            logger.info("\tNie ma pliku, lub problem z jasnoscia")
-    index += 1
-from picamera.array import PiRGBArray
-from picamera import PiCamera
-from sense_hat import SenseHat
-from logzero import logger
-from time import sleep
-import datetime
-import numpy as np
-import time
-import cv2
-import logging
-import logzero
-import ephem
-import os
-
-# Setting the global variables
-sense = SenseHat()
+mission_time = 0.1  # docelowo 178
 dir_path = os.path.dirname(os.path.realpath(__file__))
 photo_counter = 1
 
-# Setting up the camera
+#tworzy logfile
+logfile(dir_path + "/spacerad.csv")
+
+#poczatek czasu misji
+start_time = datetime.now()
+now_time = datetime.now()  # uzyte w petli koncowej
+
+#Ustawienie Sense Hat
+#sh = SenseHat()
+
+#Ustawienia kamery
 camera = PiCamera()
-camera.resolution = (1600, 912)  
+camera.resolution = (2592, 1944)    #Pytamy się Waldemara czy będzie ok rozdzielczość  (ta druga 1600, 912)
 
-# Setting the logfile name
-logzero.logfile(dir_path+"/data01.csv")
+#Najnowsze dane TLE dla lokalizacji
+name = "ISS (ZARYA)"
+line1 = "1 25544U 98067A   20316.41516162  .00001589  00000+0  36499-4 0  9995"
+line2 = "2 25544  51.6454 339.9628 0001882  94.8340 265.2864 15.49409479254842"
+iss = readtle(name, line1, line2)
 
-# Setting a custom formatter
-formatter = logging.Formatter('%(asctime)-15s %(levelname)s: %(message)s');
-logzero.formatter(formatter)
-info = "photo_counter, lat, lon, direct1, direct2, water_per, cloud_per, land_per, season"
-logger.info(info)
-
-# Main display
-def matrix_Run():                              
-        G = (0, 85, 0)
-        R = (85, 0, 0)
-        X = (85, 33, 33)
-        Y = (66, 0, 0)
-        B = (34, 17, 0)
-        O = (0,0,0)
-        
-        logo = [
-        O, G, G, O, O, O, O, O,
-        O, O, G, G, B, O, O, O,
-        O, R, R, R, R, R, R, O,
-        Y, R, R, R, R, X, R, Y,
-        Y, R, R, R, R, R, X, Y,
-        Y, R, R, R, R, R, R, Y,
-        O, Y, R, R, R, R, Y, O,
-        O, O, Y, Y, Y, Y, O, O,
-        ]
-
-        return logo
-
-# Displaying percentage of water, clouds and land shown in the photo   
-def matrix_proportions(waterper, cloudper):                              
-        L = (0, 70, 0)
-        W = (0, 0, 70)
-        C = (75, 75, 75)
-        O = (0, 0, 0)
-
-        matrix = [
-        O, O, O, O, O, O, O, O,
-        L, L, L, L, L, L, L, L,
-        L, L, L, L, L, L, L, L,
-        L, L, L, L, L, L, L, L,
-        L, L, L, L, L, L, L, L,
-        L, L, L, L, L, L, L, L,
-        L, L, L, L, L, L, L, L,
-        O, O, O, O, O, O, O, O,
-        ]
-
-        waterprop = int(round(48*waterper, 0) + 8)
-        cloudprop = int(round(48*cloudper, 0) + 8)
-
-        for x in range(8, waterprop):
-                matrix[x] = W
-                
-        for x in range(waterprop, cloudprop + waterprop - 8):
-                matrix[x] = C
-
-        return matrix
-
-
-
-# Function which is writing latitude/longitude to EXIF data for photographs  
+#Funkcja zapisująca szerokość / długość geograficzną do danych EXIF ​​dla zdjęć
 def get_latlon():
         iss.compute()
         long_value = [float(i) for i in str(iss.sublong).split(":")]
@@ -153,116 +62,54 @@ def get_latlon():
         camera.exif_tags['GPS.GPSLatitude'] = '%d/1,%d/1,%d/10' % (lat_value[0], lat_value[1], lat_value[2]*10)
         return(str(lat_value), str(long_value), str(direction1), str(direction2))
 
-# Water, clouds and land detection
-def water_detection(hsv, image, season):
-        # Water detection
-        low_blue = np.array([40,90,0])
-        high_blue = np.array([250,255,150])
-        mask_blue = cv2.inRange(hsv, low_blue, high_blue)   # Creating a mask with marked water
-        mask_blue1 = cv2.bitwise_not(mask_blue) 
-        cv2.circle(mask_blue1,(828,450), 811, (250,250,250), 260)
-                
-        waterper = ((1459200 - np.count_nonzero(mask_blue1))/1139704)   # Calculating water percentage
-                
-        water_image = cv2.bitwise_and(image, image, mask=mask_blue1)
-        water_image[np.where((water_image==[0,0,0]).all(axis=2))] = [200,20,20] 
+#pozyskiwanie jasnosci
+def calculate_brightness(image):
+    greyscale = image.convert('L')
+    histogram = greyscale.histogram()
+    pixels = sum(histogram)
+    brightness = scale = len(histogram)
 
-        # Clouds detection     
-        low_white = np.array([1,1,150])
-        high_white = np.array([250,50,255])
-        mask_white = cv2.inRange(hsv, low_white, high_white)   # Creating a mask with marked clouds
-        mask_white1 = cv2.bitwise_not(mask_white)
-        cv2.circle(mask_white1,(828,450), 811, (250,250,250), 260)
-                
-        cloudper = ((1459200 - np.count_nonzero(mask_white1))/1139704)  # Calculating clouds percentage
+    for index in range(0, scale):
+        ratio = histogram[index] / pixels
+        brightness += ratio * (index - scale)
+    if brightness == 255:
+        return 1
+    else:
+        return brightness / scale
 
-        cloud_image = cv2.bitwise_and(water_image, water_image, mask=mask_white1)
-        cloud_image[np.where((cloud_image==[0,0,0]).all(axis=2))] = [255,255,255]
+logger.info("Mission started") #poczatek misji
 
-        # Land detection
-        land = cv2.bitwise_and(mask_white1, mask_blue1)   # Creating a mask with marked land
-        land1 = cv2.bitwise_not(land)
-        cv2.circle(land1,(828,450), 811, (255,255,255), 260)
 
-        landper = (1459200-np.count_nonzero(land1))/1139704   # Calculating land percentage
+#main
+photo_counter = 1  #zmienna do iteracji
 
-        land_image = cv2.bitwise_and(cloud_image, cloud_image, mask=land1)
-        land_image[np.where((land_image==[0,0,0]).all(axis=2))] = [26,150,96]
+while (now_time < start_time + timedelta(minutes=mission_time)):
+    cam.start_preview(alpha=192)  #to jest do usuniecia
+    try:
+        lat, lon, direct1, direct2 = get_latlon() #otrzymuje długość i szerokość geograficzną
 
-        # Creating mask with drawn coasts
-        water_edge = cv2.Laplacian(mask_blue1, cv2.CV_8U)
-        water_edge1 = cv2.bitwise_not(water_edge)
-        cv2.circle(water_edge1,(828,450), 811, (255,255,255), 260)
+        #zapisuje całą ścieżkę zdjęcia
+        #zdjecie i jasnosc
+        image_name = "spacerad_{}.jpg".format(str(index).zfill(4))
+        #cam.capture(image_name)
+        image = Image.open("spacerad_{}.jpg".format(str(index).zfill(4)))
+        jasnosc = calculate_brightness(image)
 
-        edge_image = cv2.bitwise_and(image, image, mask=water_edge1)
-        edge_image[np.where((edge_image==[0,0,0]).all(axis=2))] = [0,0,255]
+        #zapisywanie informacji do pliku log
+        info_log = "Zdjecie {}:".format(index), jasnosc
+        logger.info(info_log, lat, lon, direct1, direct2)
 
-        # Showing the percentage of water, clouds and land on the photo
-        water_per = str(round(100*waterper, 1))
-        cloud_per = str(round(100*cloudper, 1))
-        land_per = str(round(100*landper, 1))
+        if jasnosc < minimum_brightness:
+            os.remove(image)
+            logger.info("\tUsunieto zdjecie {}".format(image))
+    except Exception as e:
+        logger.error("{}: {})".format(e.__class__.__name__, e))
+        logger.info("\tNie ma pliku, lub problem z jasnoscia")
+        logger.error("Experiment error: " + str(e))
 
-        if season == "night":
-                # Saving the image with marked water, clouds and land and coasts
-                cv2.imwrite(dir_path+"/night_detection_image_"+ str(photo_counter).zfill(3)+".jpg",land_image)
-                cv2.imwrite(dir_path+"/night_edge_image_"+ str(photo_counter).zfill(3)+".jpg",edge_image)            
-        else:
-                sense.set_pixels(matrix_proportions(waterper, cloudper))
-                
-                # Saving the image with marked water, clouds and land and coasts
-                cv2.imwrite(dir_path+"/detection_image_"+ str(photo_counter).zfill(3)+".jpg",land_image)
-                cv2.imwrite(dir_path+"/edge_image_"+ str(photo_counter).zfill(3)+".jpg",edge_image)
-
-        return(water_per, cloud_per, land_per)
-
-# Image processing 
-def image_processing():
-        camera.capture(dir_path+"/image_"+ str(photo_counter).zfill(3)+".jpg")  # Taking a photo    
-
-        image = cv2.imread(dir_path+"/image_"+ str(photo_counter).zfill(3)+".jpg")  # Loading the photo
-        image[np.where((image==[0,0,0]).all(axis=2))] = [1,1,1]
-
-        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
-        # Night detection
-        low_grey = np.array([0,0,0])
-        high_grey = np.array([255,125,95])
-        mask_grey = cv2.inRange(hsv, low_grey, high_grey)
-        cv2.circle(mask_grey,(828,450), 811, (250,250,250), 260)
-        greyper = ((1459200 - np.count_nonzero(mask_grey))/1139704)
-
-        if greyper > 0.65:
-                season = "night"
-                sense.set_pixels(matrix_moon())
-                water_per, cloud_per, land_per = water_detection(hsv, image, season,)
-        else:
-                season = "day"
-                water_per, cloud_per, land_per = water_detection(hsv, image, season,)
-                
-        return(water_per, cloud_per, land_per, season)
-
-# Main program
-start_time = datetime.datetime.now()    # Datetime variable to store the start time
-now_time = datetime.datetime.now()      # Datetime variable to store the current time
-
-sense.set_pixels(matrix_Run())    # Displaying our logo
-
-while (now_time < start_time + datetime.timedelta(minutes=175)):  
-        try:
-                lat, lon, direct1, direct2 = get_latlon() # Getting latitude and longitude
-                
-                water_per, cloud_per, land_per, season = image_processing()
-                
-                # Saving the data to the file
-                logger.info("%s,%s,%s,%s,%s,%s,%s,%s,%s", photo_counter, lat, lon, direct1, direct2, water_per, cloud_per, land_per, season)        
-                
-                sleep(12)
-                sense.set_pixels(matrix_Run())
-                sleep(6)
-
-                photo_counter += 1
-                now_time = datetime.datetime.now()      # Updating current time
-        except Exception as e:
-                logger.error("Experiment error: " + str(e))
+    #sleep(3)
+    index += 1
+    now_time = datetime.now()  #aktualizuje czas
 
 sense.clear()
+#cam.stop_preview()  #to jest tez do usuniecia
