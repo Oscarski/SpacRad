@@ -1,11 +1,11 @@
 #biblioteki
 #from sense_hat import SenseHat
-#from picamera import PiCamera
+from picamera import PiCamera
 from time import sleep
 import logging
 import ephem
 import csv
-import random
+Import random
 from logzero import logger, logfile
 from PIL import Image
 from datetime import datetime
@@ -16,7 +16,7 @@ import os
 #zmienne globalne
 minimum_brightness = 0.35 #minimalna jasnosc
 mission_time = 0.1  # docelowo 178
-dir_path = os.path.dirname(os.path.realpath(__file__))
+dir_path = os.path.dirname(os.path.realpath(__file__)) 
 photo_counter = 1
 
 #tworzy logfile
@@ -83,33 +83,32 @@ logger.info("Mission started") #poczatek misji
 #main
 photo_counter = 1  #zmienna do iteracji
 
-while (now_time < start_time + timedelta(minutes=mission_time)):
-    cam.start_preview(alpha=192)  #to jest do usuniecia
+while (now_time < start_time + timedelta(minutes=mission_time)):     cam.start_preview(alpha=192)  #to jest do usuniecia
     try:
         lat, lon, direct1, direct2 = get_latlon() #otrzymuje długość i szerokość geograficzną
 
-        #zapisuje całą ścieżkę zdjęcia
+        #zapisuje całą ścieżkę zdjęcia 
         #zdjecie i jasnosc
         image_name = "spacerad_{}.jpg".format(str(index).zfill(4))
-        #cam.capture(image_name)
+        cam.capture(image_name)
         image = Image.open("spacerad_{}.jpg".format(str(index).zfill(4)))
         jasnosc = calculate_brightness(image)
 
         #zapisywanie informacji do pliku log
         info_log = "Zdjecie {}:".format(index), jasnosc
-        logger.info(info_log, lat, lon, direct1, direct2)
+        logger.info(info_log, lat, lon, direct1, direct2, now_time)
 
         if jasnosc < minimum_brightness:
             os.remove(image)
             logger.info("\tUsunieto zdjecie {}".format(image))
     except Exception as e:
-        logger.error("{}: {})".format(e.__class__.__name__, e))
-        logger.info("\tNie ma pliku, lub problem z jasnoscia")
-        logger.error("Experiment error: " + str(e))
+            logger.error("{}: {})".format(e.__class__.__name__, e))
+            logger.info("\tNie ma pliku, lub problem z jasnoscia")
+	    logger.error("Experiment error: " + str(e))
 
     #sleep(3)
     index += 1
     now_time = datetime.now()  #aktualizuje czas
 
-sense.clear()
-#cam.stop_preview()  #to jest tez do usuniecia
+#sense.clear()
+cam.stop_preview()  #to jest tez do usuniecia
