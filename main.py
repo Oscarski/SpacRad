@@ -83,7 +83,8 @@ logger.info("Mission started") #poczatek misji
 #main
 photo_counter = 1  #zmienna do iteracji
 
-while (now_time < start_time + timedelta(minutes=mission_time)):     cam.start_preview(alpha=192)  #to jest do usuniecia
+while (now_time < start_time + timedelta(minutes=mission_time)):
+	cam.start_preview(alpha=192)  #to jest do usuniecia
     try:
         lat, lon, direct1, direct2 = get_latlon() #otrzymuje długość i szerokość geograficzną
 
@@ -97,17 +98,20 @@ while (now_time < start_time + timedelta(minutes=mission_time)):     cam.start_p
         #zapisywanie informacji do pliku log
         info_log = "Zdjecie {}:".format(index), jasnosc
         logger.info(info_log, lat, lon, direct1, direct2, now_time)
-
+	index += 1
+	
         if jasnosc < minimum_brightness:
             os.remove(image)
             logger.info("\tUsunieto zdjecie {}".format(image))
+	    index -= 1
+	
     except Exception as e:
             logger.error("{}: {})".format(e.__class__.__name__, e))
             logger.info("\tNie ma pliku, lub problem z jasnoscia")
 	    logger.error("Experiment error: " + str(e))
 
-    #sleep(3)
-    index += 1
+    sleep(3)
+    
     now_time = datetime.now()  #aktualizuje czas
 
 #sense.clear()
