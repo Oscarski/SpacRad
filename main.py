@@ -84,15 +84,15 @@ while (now_time < start_time + timedelta(minutes=mission_time)):
     try:
 
         # otrzymuje długość i szerokość geograficzną
-
-        # zapisuje całą ścieżkę zdjęcia
-        # zdjecie i jasnosc
+        get_latlon()
         
         numer_zdjecia = str(photo_counter).zfill(4)
         
+        # robi zdjecie
         image_name = ("spacerad_{}.jpg".format(numer_zdjecia))
         camera.capture(image_name)
         
+        # otwiera zdjecie i liczy jasnosc
         image = Image.open(image_name)
         jasnosc = calculate_brightness(image)
 
@@ -111,7 +111,7 @@ while (now_time < start_time + timedelta(minutes=mission_time)):
         logger.error("{}: {})".format(e.__class__.__name__, e))
         logger.info("\tNie ma pliku, lub problem z jasnoscia")
 
-    sleep(1)
+    sleep(1) # do modyfikacji, robi zdjecia co sekunde
     photo_counter += 1
     now_time = datetime.now()  # aktualizuje czas
 
