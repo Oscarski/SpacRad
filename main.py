@@ -2,6 +2,8 @@
 # Team SpaceRad
 # Researchers: Oskar, Błażej, Dawid
 # Team from Poland
+# Thanks to SpaceWombats team
+# https://github.com/jpalau-edu/AstroPi1920
 ############################################################################
 
 # PL - biblioteki
@@ -91,7 +93,6 @@ logger.info("Mission started")  # PL - poczatek misji       ENG - the beginning 
 # PL,ENG - Main
 
 while (now_time < start_time + timedelta(minutes=mission_time)):
-    camera.start_preview(alpha=192)  # to jest do usuniecia
     try:
 
         # PL - otrzymuje długość i szerokość geograficzną
@@ -134,6 +135,4 @@ while (now_time < start_time + timedelta(minutes=mission_time)):
     photo_counter += 1
     now_time = datetime.now()  # PL - aktualizuje czas              # ENG - updates time
 
-# sense.clear()
-camera.stop_preview() 
 logger.info("Mission ended")
