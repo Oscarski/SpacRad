@@ -29,23 +29,23 @@ logfile(dir_path + "/spacerad.csv")
 # PL - poczatek czasu misji
 # ENG - start of mission time
 start_time = datetime.now()
-now_time = datetime.now()  # uzyte w petli koncowej
+now_time = datetime.now()  # PL - uzyte w petli koncowej    ENG - used in the final loop
 
-# Ustawienie Sense Hat
-# sh = SenseHat()
-
-# Ustawienia kamery
+# PL - ustawienia kamery
+# ENG - camera settings
 camera = PiCamera()
 camera.resolution = (2592, 1944)  
 
-# Najnowsze dane TLE dla lokalizacji
+# PL - Najnowsze dane TLE dla lokalizacji
+# ENG - Latest TLE data for location
 name = "ISS (ZARYA)"
 line1 = "1 25544U 98067A   20316.41516162  .00001589  00000+0  36499-4 0  9995"
 line2 = "2 25544  51.6454 339.9628 0001882  94.8340 265.2864 15.49409479254842"
 iss = ephem.readtle(name, line1, line2)
 
 
-# Funkcja zapisująca szerokość / długość geograficzną do danych EXIF ​​dla zdjęć
+# PL - Funkcja zapisująca szerokość / długość geograficzną do danych EXIF ​​dla zdjęć
+# ENG - Function that saves latitude / longitude to EXIF data for photos
 def get_latlon():
     iss.compute()
     long_value = [float(i) for i in str(iss.sublong).split(":")]
@@ -69,7 +69,8 @@ def get_latlon():
     return (str(lat_value), str(long_value), str(direction1), str(direction2))
 
 
-# pozyskiwanie jasnosci
+# PL - pozyskiwanie jasnosci
+# ENG - gaining clarity
 def calculate_brightness(image):
     greyscale = image.convert('L')
     histogram = greyscale.histogram()
@@ -85,24 +86,27 @@ def calculate_brightness(image):
         return brightness / scale
 
 
-logger.info("Mission started")  # poczatek misji
+logger.info("Mission started")  # PL - poczatek misji       ENG - the beginning of the mission
 
-# main
+# PL,ENG - Main
 
 while (now_time < start_time + timedelta(minutes=mission_time)):
     camera.start_preview(alpha=192)  # to jest do usuniecia
     try:
 
-        # otrzymuje długość i szerokość geograficzną
+        # PL - otrzymuje długość i szerokość geograficzną
+        # ENG - gets longitude and latitude
         get_latlon()
 
         numer_zdjecia = str(photo_counter).zfill(4)
 
-        # robi zdjecie
+        # PL - robi zdjecie
+        # ENG - takes a picture
         image_name = ("spacerad_{}.jpg".format(numer_zdjecia))
         camera.capture(image_name)
 
-        #otwiera zdjecie i liczy jasnosc
+        # PL - otwiera zdjecie i liczy jasnosc
+        # ENG - opens the picture and counts the brightness
         im = Image.open(image_name)
         width, height = im.size
         x = int(width * 0.1)
@@ -110,7 +114,8 @@ while (now_time < start_time + timedelta(minutes=mission_time)):
         image = im.crop((x, 0, y, height))
         jasnosc = calculate_brightness(image)
 
-        # zapisywanie informacji do pliku log
+        # PL - zapisywanie informacji do pliku log
+        # ENG - writing information to a log file
         info_log = "\tspacerad_{}, ".format(numer_zdjecia) + "jasnosc: " + str(jasnosc)
 
         logger.info(info_log)
@@ -125,9 +130,9 @@ while (now_time < start_time + timedelta(minutes=mission_time)):
         logger.error("{}: {})".format(e.__class__.__name__, e))
         logger.info("\tNie ma pliku, lub problem z jasnoscia")
 
-    sleep(25)  # do modyfikacji, robi zdjecia co sekunde
+    sleep(25)  # PL - do modyfikacji, robi zdjecia co sekunde       # ENG - for modification, takes photos every second
     photo_counter += 1
-    now_time = datetime.now()  # aktualizuje czas
+    now_time = datetime.now()  # PL - aktualizuje czas              # ENG - updates time
 
 # sense.clear()
 camera.stop_preview()  # to jest tez do usuniecia
