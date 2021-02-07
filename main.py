@@ -16,8 +16,8 @@ from datetime import timedelta
 import os
 
 # zmienne globalne
-minimum_brightness = 0.35  # minimalna jasnosc
-mission_time = 0.1  # docelowo 178
+minimum_brightness = 0.34  # minimalna jasnosc
+mission_time = 175  # docelowo 175
 dir_path = os.path.dirname(os.path.realpath(__file__))
 photo_counter = 1
 
@@ -33,7 +33,7 @@ now_time = datetime.now()  # uzyte w petli koncowej
 
 # Ustawienia kamery
 camera = PiCamera()
-camera.resolution = (2592, 1944)  # Pytamy się Waldemara czy będzie ok rozdzielczość  (ta druga 1600, 912)
+camera.resolution = (2592, 1944)  
 
 # Najnowsze dane TLE dla lokalizacji
 name = "ISS (ZARYA)"
@@ -81,6 +81,7 @@ def calculate_brightness(image):
     else:
         return brightness / scale
 
+
 logger.info("Mission started")  # poczatek misji
 
 # main
@@ -91,20 +92,24 @@ while (now_time < start_time + timedelta(minutes=mission_time)):
 
         # otrzymuje długość i szerokość geograficzną
         get_latlon()
-        
+
         numer_zdjecia = str(photo_counter).zfill(4)
-        
+
         # robi zdjecie
         image_name = ("spacerad_{}.jpg".format(numer_zdjecia))
         camera.capture(image_name)
-        
-        # otwiera zdjecie i liczy jasnosc
-        image = Image.open(image_name)
+
+        #otwiera zdjecie i liczy jasnosc
+        im = Image.open(image_name)
+        width, height = im.size
+        x = int(width * 0.1)
+        y = int(width - width * 0.1)
+        image = im.crop((x, 0, y, height))
         jasnosc = calculate_brightness(image)
 
         # zapisywanie informacji do pliku log
         info_log = "\tspacerad_{}, ".format(numer_zdjecia) + "jasnosc: " + str(jasnosc)
-        
+
         logger.info(info_log)
         logger.info(get_latlon())
 
@@ -117,9 +122,10 @@ while (now_time < start_time + timedelta(minutes=mission_time)):
         logger.error("{}: {})".format(e.__class__.__name__, e))
         logger.info("\tNie ma pliku, lub problem z jasnoscia")
 
-    sleep(1) # do modyfikacji, robi zdjecia co sekunde
+    sleep(25)  # do modyfikacji, robi zdjecia co sekunde
     photo_counter += 1
     now_time = datetime.now()  # aktualizuje czas
 
 # sense.clear()
 camera.stop_preview()  # to jest tez do usuniecia
+logger.info("Mission ended")
