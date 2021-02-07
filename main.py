@@ -135,5 +135,5 @@ while (now_time < start_time + timedelta(minutes=mission_time)):
     now_time = datetime.now()  # PL - aktualizuje czas              # ENG - updates time
 
 # sense.clear()
-camera.stop_preview()  # to jest tez do usuniecia
+camera.stop_preview() 
 logger.info("Mission ended")
