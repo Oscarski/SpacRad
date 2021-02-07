@@ -4,8 +4,8 @@
 # Team from Poland
 ############################################################################
 
-# biblioteki
-# from sense_hat import SenseHat
+# PL - biblioteki
+# ENG - libraries
 from picamera import PiCamera
 from time import sleep
 import ephem
@@ -15,16 +15,19 @@ from datetime import datetime
 from datetime import timedelta
 import os
 
-# zmienne globalne
-minimum_brightness = 0.34  # minimalna jasnosc
+# PL - Zmienne globalne
+# ENG - Global variables
+minimum_brightness = 0.34  # PL - minimalna jasnosc   ENG - minimum brightness
 mission_time = 175  # docelowo 175
 dir_path = os.path.dirname(os.path.realpath(__file__))
 photo_counter = 1
 
-# tworzy logfile
+# PL - tworzy logfile
+# ENG - creates a logfile
 logfile(dir_path + "/spacerad.csv")
 
-# poczatek czasu misji
+# PL - poczatek czasu misji
+# ENG - start of mission time
 start_time = datetime.now()
 now_time = datetime.now()  # uzyte w petli koncowej
 
