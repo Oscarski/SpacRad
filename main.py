@@ -131,7 +131,7 @@ while (now_time < start_time + timedelta(minutes=mission_time)):
         logger.error("{}: {})".format(e.__class__.__name__, e))
         logger.info("\tNie ma pliku, lub problem z jasnoscia")
 
-    sleep(25)  # PL - do modyfikacji, robi zdjecia co sekunde       # ENG - for modification, takes photos every second
+    sleep(25)
     photo_counter += 1
     now_time = datetime.now()  # PL - aktualizuje czas              # ENG - updates time
 
